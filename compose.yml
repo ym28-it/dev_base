@@ -1,0 +1,25 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+
+    working_dir: /work
+    volumes:
+      - ${WORKDIR:-..}:/work:cached
+
+      # Git/SSH をコンテナ内で使う
+      - ${HOME}/.ssh:/home/dev.ssh:ro
+      - ${HOME}/.gitconfig:/home/dev/.gitconfig:ro
+    
+    environment:
+      - TZ=Asia/Tokyo
+      - EDITOR=nvim
+      - SHELL=/usr/bin/zsh
+
+    tty: true
+    stdin_open: true
+    command: sleep infinity

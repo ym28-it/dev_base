@@ -1,0 +1,24 @@
+FROM ubuntu:24.04
+
+ARG UID=1000
+ARG GID=1000
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl git openssh-client \
+    zsh less ripgrep fd-find eza \
+    build-essential pkg-config \
+    neovim \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g ${GID} dev \
+  && useradd -m -u ${UID} -g ${GID} -s /usr/bin/zsh dev
+
+USER dev
+WORKDIR /work
+
+RUN curl -fsSl https://mise.jdx.dev/install.sh | sh
+ENV PATH="/home/dev/.local/bin:${PATH}"
+
+RUN echo 'eval "$(mise activate zsh)"' >> /home/dev/.zshrc \
+  && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/dev/.zshrc
+
