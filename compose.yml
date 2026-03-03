@@ -12,10 +12,25 @@ services:
       - ${WORKDIR:-..}:/work:cached
 
       # Git/SSH をコンテナ内で使う
-      - ${HOME}/.ssh:/home/dev.ssh:ro
+      - ${HOME}/.ssh:/home/dev/.ssh:ro
       - ${HOME}/.gitconfig:/home/dev/.gitconfig:ro
+
+      # Zshのエイリアス設定も流用
+      - ${HOME}/.config/zsh/aliases.zsh:/home/dev/.config/zsh/aliases.zsh:ro
+
+      # ---- Neovim config (ホスト設定を流用) ----
+      - ${HOME}/.config/nvim:/home/dev/.config/nvim:ro
+
+      # ---- Neovim data(コンテナ側で永続化) ----
+      - nvim-share:/home/dev/.local/share/nvim
+      - nvim-cache:/home/dev/.cache/nvim
     
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
+      - HOME=/home/dev
+      - XDG_CONFIG_HOME=/home/dev/.config
+      - XDG_DATA_HOME=/home/dev/.local/share
+      - XDG_CACHE_HOME=/home/dev/.cache
       - TZ=Asia/Tokyo
       - EDITOR=nvim
       - SHELL=/usr/bin/zsh
@@ -23,3 +38,7 @@ services:
     tty: true
     stdin_open: true
     command: sleep infinity
+
+volumes:
+  nvim-share:
+  nvim-cache:

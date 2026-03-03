@@ -1,24 +1,48 @@
 FROM ubuntu:24.04
 
-ARG UID=1000
-ARG GID=1000
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/home/dev
+ENV PATH="/home/dev/.local/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl git openssh-client \
-    zsh less ripgrep fd-find eza \
+    zsh less ripgrep fd-find \
     build-essential pkg-config \
     neovim \
-    && rm -rf /var/lib/apt/lists/*
+    eza bat \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -g ${GID} dev \
-  && useradd -m -u ${UID} -g ${GID} -s /usr/bin/zsh dev
+# 数値UIDで動かしても困らないように /home/dev を用意
+RUN mkdir -p /home/dev/.config/zsh /home/dev/.cache /home/dev/.local/share \
+ && chmod -R 777 /home/dev
 
-USER dev
+# mise
+RUN curl -fsSL https://mise.jdx.dev/install.sh | sh
+
+# container-safe zshrc（ホストのaliasだけ読む）
+RUN cat > /home/dev/.zshrc <<'ZSHRC'
+# --- container-safe zshrc ---
+setopt hist_ignore_dups hist_reduce_blanks share_history
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+
+autoload -Uz compinit
+compinit -u
+
+# bat が batcat の場合の救済
+if ! command -v bat >/dev/null 2>&1 && command -v batcat >/dev/null 2>&1; then
+  alias bat='batcat'
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
+# host aliases (read-only mount)
+if [ -f "$HOME/.config/zsh/aliases.zsh" ]; then
+  source "$HOME/.config/zsh/aliases.zsh"
+fi
+ZSHRC
+
 WORKDIR /work
-
-RUN curl -fsSl https://mise.jdx.dev/install.sh | sh
-ENV PATH="/home/dev/.local/bin:${PATH}"
-
-RUN echo 'eval "$(mise activate zsh)"' >> /home/dev/.zshrc \
-  && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/dev/.zshrc
-
